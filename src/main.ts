@@ -1,3 +1,5 @@
+import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState } from "./constants";
+import type { Evaluation, State } from "./types";
 import "./style.css";
 
 declare global {
@@ -6,49 +8,6 @@ declare global {
         grid: typeof GRID;
     }
 }
-
-type Evaluation = "correct" | "present" | "absent";
-
-interface State {
-    attempts: string[];
-    attempt_index: number;
-    evaluation: Evaluation[][];
-    status: "success" | "fail" | "in-progress";
-}
-
-const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
-
-const LENGTH = 5;
-const MAX_ATTEMPTS = 3;
-const TILES_NODES: HTMLDivElement[] = [];
-const KEYBOARD_NODES: HTMLButtonElement[] = [];
-
-const RATING: Record<Evaluation, number> = {
-    absent: 0,
-    present: 1,
-    correct: 2,
-};
-
-const COLOURS: Record<Evaluation, string> = {
-    correct: "#6aaa64",
-    present: "#c9b458",
-    absent: "#787c7e",
-};
-
-const ANSWER: string = "apple";
-
-const WORD_LIST = ["apple", "paper", "hello", "world"];
-
-const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
-
-const STORAGE_KEY = "@@@PREFACE-WORDLE";
-
-const initialState: State = {
-    attempts: Array.from({ length: MAX_ATTEMPTS }).map((_) => ""),
-    attempt_index: 0,
-    evaluation: [],
-    status: "in-progress",
-};
 
 let STATE: State = initialState;
 
@@ -67,6 +26,13 @@ function buildGrid() {
         }
         const tile = document.createElement("div");
         tile.className = "tile";
+        tile.dataset["status"] = "empty";
+        tile.onanimationend = (event) => {
+            if (event.animationName === "FlipIn") {
+                tile.dataset["animation"] = "flip-out";
+            }
+            setTimeout(() => (tile.dataset["animation"] = "idle"), 250);
+        };
         TILES_NODES.push(tile);
         row.appendChild(tile);
     });
@@ -138,6 +104,8 @@ function handleKeyboardEvent(key: string, event: KeyboardEvent | MouseEvent) {
     if (regex.test(key)) {
         if (current_length === LENGTH) return;
         TILES_NODES[next].textContent = key;
+        TILES_NODES[next].dataset["status"] = "tbd";
+        TILES_NODES[next].dataset["animation"] = "pop";
         GRID[next] = key;
         attempts[attempt_index] += key;
         return;
@@ -146,6 +114,7 @@ function handleKeyboardEvent(key: string, event: KeyboardEvent | MouseEvent) {
     if (key === "Backspace") {
         if (current_attempt === "") return;
         TILES_NODES[next - 1].textContent = "";
+        TILES_NODES[next - 1].dataset["status"] = "empty";
         GRID[next - 1] = "";
         attempts[attempt_index] = current_attempt.slice(0, current_length - 1);
     } else if (key === "Enter") {
@@ -170,13 +139,13 @@ function evaluate(string: string) {
     return evaluation;
 }
 
-function paintRow(index: number, evaluation: Evaluation[]) {
+async function paintRow(index: number, evaluation: Evaluation[]) {
     const tile_index = index * LENGTH;
 
     for (let i = tile_index; i < tile_index + LENGTH; i++) {
         const result = evaluation[i % LENGTH];
-        TILES_NODES[i].style.color = "#ffffff";
-        TILES_NODES[i].style.backgroundColor = COLOURS[result];
+        TILES_NODES[i].dataset["status"] = result;
+        setTimeout(() => (TILES_NODES[i].dataset["animation"] = "flip-in"), (i % LENGTH) * 300);
     }
 }
 
@@ -237,8 +206,7 @@ function updateKeyboard() {
         const char = button.innerHTML;
         const status = summary.get(char);
         if (status) {
-            button.style.backgroundColor = COLOURS[status];
-            button.style.color = "#fff";
+            button.dataset["status"] = status;
         }
     });
 }
