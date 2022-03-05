@@ -27,11 +27,8 @@ function buildGrid() {
         const tile = document.createElement("div");
         tile.className = "tile";
         tile.dataset["status"] = "empty";
-        tile.onanimationend = (event) => {
-            if (event.animationName === "FlipIn") {
-                tile.dataset["animation"] = "flip-out";
-            }
-            setTimeout(() => (tile.dataset["animation"] = "idle"), 250);
+        tile.onanimationend = () => {
+            tile.dataset["animation"] = "idle";
         };
         TILES_NODES.push(tile);
         row.appendChild(tile);
@@ -64,9 +61,12 @@ function buildKeyboard() {
 
 function createToast(message: string, className: "error" | "success" | "fail") {
     const toast = document.createElement("div");
-    toast.classList.add("toast", className);
+    toast.classList.add("toast", className, "fade");
     toast.textContent = message;
     document.body.appendChild(toast);
+    setTimeout(() => {
+        document.body.removeChild(toast);
+    }, 1500);
 }
 
 function handleButtonClick(event: MouseEvent) {
@@ -144,8 +144,10 @@ async function paintRow(index: number, evaluation: Evaluation[]) {
 
     for (let i = tile_index; i < tile_index + LENGTH; i++) {
         const result = evaluation[i % LENGTH];
-        TILES_NODES[i].dataset["status"] = result;
-        setTimeout(() => (TILES_NODES[i].dataset["animation"] = "flip-in"), (i % LENGTH) * 300);
+        setTimeout(() => {
+            TILES_NODES[i].dataset["status"] = result;
+            TILES_NODES[i].dataset["animation"] = "flip";
+        }, (i % LENGTH) * 400);
     }
 }
 
@@ -256,6 +258,9 @@ function startGame() {
 }
 
 startGame();
+
+// @ts-ignore
+document.querySelector("#clear").onclick = () => window.localStorage.clear();
 
 window.state = STATE;
 window.grid = GRID;

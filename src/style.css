@@ -9,6 +9,39 @@
   --color-present: #c9b458;
   --color-absent: #787c7e;
   --white: #ffffff;
+  --black: #121213;
+  --toast-bg: rgb(24 24 24 / 80%);
+}
+
+@font-face {
+  font-family: GalanoGrotesque;
+  font-style: normal;
+  font-weight: 400;
+  src: url("./fonts/GalanoGrotesqueRegular.otf") format("opentype");
+}
+
+@font-face {
+  font-family: GalanoGrotesque;
+  font-style: normal;
+  font-weight: 500;
+  src: url("./fonts/GalanoGrotesqueMedium.otf") format("opentype");
+}
+
+@font-face {
+  font-family: GalanoGrotesque;
+  font-weight: 600;
+  src: url("./fonts/GalanoGrotesqueSemiBold.otf") format("opentype");
+}
+
+@font-face {
+  font-family: GalanoGrotesque;
+  font-weight: 700;
+  src: url("./fonts/GalanoGrotesqueBold.otf") format("opentype");
+}
+
+body {
+  font-family: "GalanoGrotesque", "Open Sans", "Helvetica", "sans-serif";
+  margin: 0;
 }
 
 #game {
@@ -99,27 +132,16 @@
     }
   }
 
-  &[data-animation="flip-in"] {
-    animation-name: FlipIn;
-    animation-duration: 250ms;
-    animation-timing-function: ease-in;
+  &[data-animation="flip"] {
+    animation-name: Flip;
+    animation-duration: 500ms;
+    animation-timing-function: ease-in-out;
   }
-  @keyframes FlipIn {
+  @keyframes Flip {
     0% {
       transform: rotateX(0);
     }
-    100% {
-      transform: rotateX(-90deg);
-    }
-  }
-
-  &[data-animation="flip-out"] {
-    animation-name: FlipOut;
-    animation-duration: 250ms;
-    animation-timing-function: ease-in;
-  }
-  @keyframes FlipOut {
-    0% {
+    50% {
       transform: rotateX(-90deg);
     }
     100% {
@@ -135,7 +157,6 @@
   .row {
     display: flex;
     justify-content: center;
-    /* width: 100%; */
     margin: 0 auto 8px;
     touch-action: manipulation;
 
@@ -151,7 +172,6 @@
       user-select: none;
       background-color: var(--key-bg);
       color: var(--key-text-color);
-      /* flex: 1; */
       min-width: 2.5rem;
       display: flex;
       justify-content: center;
@@ -175,4 +195,17 @@
       }
     }
   }
+}
+
+.toast {
+  padding: 11px 20px;
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--toast-bg);
+  color: var(--white);
+  border-radius: 5px;
+  text-align: center;
+  font-size: 14px;
 }

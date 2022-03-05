@@ -3,7 +3,7 @@ import type { Evaluation, State } from "./types";
 const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
 
 const LENGTH = 5;
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 6;
 const TILES_NODES: HTMLDivElement[] = [];
 const KEYBOARD_NODES: HTMLButtonElement[] = [];
 
