@@ -6,6 +6,7 @@ declare global {
     interface Window {
         state: typeof STATE;
         grid: typeof GRID;
+        answer: string;
     }
 }
 

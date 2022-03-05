@@ -1,3 +1,4 @@
+import { valid, playable } from "./fixtures/words.json";
 import type { Evaluation, State } from "./types";
 
 const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
@@ -13,9 +14,9 @@ const RATING: Record<Evaluation, number> = {
     correct: 2,
 };
 
-const ANSWER: string = "apple";
+const ANSWER: string = playable[0];
 
-const WORD_LIST = ["apple", "paper", "hello", "world"];
+const WORD_LIST = valid;
 
 const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
 
@@ -27,5 +28,7 @@ const initialState: State = {
     evaluation: [],
     status: "in-progress",
 };
+
+window.answer = ANSWER;
 
 export { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState };
