@@ -1,4 +1,4 @@
-import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState } from "./constants";
+import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState } from "./constants";
 import type { Evaluation, State } from "./types";
 import "./style.css";
 
@@ -22,6 +22,7 @@ function buildGrid() {
     GRID.forEach((_, i) => {
         if (i % LENGTH === 0 && i !== 0) {
             wrapper.appendChild(row);
+            TILES_ROWS.push(row);
             row = document.createElement("div");
             row.className = "row";
         }
@@ -35,6 +36,7 @@ function buildGrid() {
         row.appendChild(tile);
     });
     wrapper.appendChild(row);
+    TILES_ROWS.push(row);
     document.querySelector("#board-container")!.appendChild(wrapper);
 }
 
@@ -88,7 +90,6 @@ function bindKeyboard() {
 }
 
 function handleKeyboardEvent(key: string, event: KeyboardEvent | MouseEvent) {
-    console.log(STATE);
     const { attempts, attempt_index, status } = STATE;
 
     if (status === "success" || status === "fail") return;
@@ -119,6 +120,8 @@ function handleKeyboardEvent(key: string, event: KeyboardEvent | MouseEvent) {
         GRID[next - 1] = "";
         attempts[attempt_index] = current_attempt.slice(0, current_length - 1);
     } else if (key === "Enter") {
+        // to debug
+        console.log(STATE);
         if (current_attempt.length < LENGTH) return;
         evaluateAndPaint(current_attempt);
         saveToStorage();
@@ -140,24 +143,34 @@ function evaluate(string: string) {
     return evaluation;
 }
 
-async function paintRow(index: number, evaluation: Evaluation[]) {
+function paintRow(index: number, evaluation: Evaluation[]) {
     const tile_index = index * LENGTH;
 
     for (let i = tile_index; i < tile_index + LENGTH; i++) {
         const result = evaluation[i % LENGTH];
-        setTimeout(() => {
+        TILES_NODES[i].dataset["animation"] = "flip";
+        TILES_NODES[i].style.animationDelay = `${(i % LENGTH) * 400}ms`;
+        TILES_NODES[i].onanimationend = () => {
             TILES_NODES[i].dataset["status"] = result;
-            TILES_NODES[i].dataset["animation"] = "flip";
-        }, (i % LENGTH) * 400);
+        };
+    }
+}
+
+function bounce() {
+    const { attempt_index } = STATE;
+    const start = attempt_index * LENGTH;
+    for (let i = start; i < start + 5; i++) {
+        TILES_NODES[i].dataset["animation"] = "win";
+        TILES_NODES[i].style.animationDelay = `${(i % LENGTH) * 100}ms`;
     }
 }
 
 function evaluateAndPaint(attempt: string) {
+    const { attempt_index } = STATE;
     try {
         if (!WORD_LIST.includes(attempt)) {
             throw new Error(`${attempt.toUpperCase()} not in word list`);
         }
-        const { attempt_index } = STATE;
         const results = evaluate(attempt);
         STATE.evaluation.push(results);
 
@@ -166,7 +179,11 @@ function evaluateAndPaint(attempt: string) {
 
         if (ANSWER === attempt) {
             STATE.status = "success";
-            createToast(`${CONGRATULATIONS[attempt_index]}!`, "success");
+
+            setTimeout(() => {
+                bounce();
+                createToast(`${CONGRATULATIONS[attempt_index]}!`, "success");
+            }, (LENGTH + 1) * 400);
         } else if (attempt_index === MAX_ATTEMPTS - 1) {
             STATE.status = "fail";
             createToast(`The word was ${ANSWER.toUpperCase()}`, "fail");
@@ -176,6 +193,12 @@ function evaluateAndPaint(attempt: string) {
     } catch (error) {
         // @ts-ignore
         createToast(`${error.message}`, "fail");
+        TILES_ROWS[attempt_index].dataset["status"] = "invalid";
+        TILES_ROWS[attempt_index].onanimationend = (event) => {
+            if (event.animationName === "Shake") {
+                TILES_ROWS[attempt_index].removeAttribute("data-status");
+            }
+        };
     }
 }
 
@@ -260,7 +283,7 @@ function startGame() {
 
 startGame();
 
-// @ts-ignore
+// @ts-ignore -- for debug
 document.querySelector("#clear").onclick = () => window.localStorage.clear();
 
 window.state = STATE;

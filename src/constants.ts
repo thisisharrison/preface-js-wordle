@@ -6,6 +6,7 @@ const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Gre
 const LENGTH = 5;
 const MAX_ATTEMPTS = 6;
 const TILES_NODES: HTMLDivElement[] = [];
+const TILES_ROWS: HTMLDivElement[] = [];
 const KEYBOARD_NODES: HTMLButtonElement[] = [];
 
 const RATING: Record<Evaluation, number> = {
@@ -16,7 +17,7 @@ const RATING: Record<Evaluation, number> = {
 
 const ANSWER: string = playable[0];
 
-const WORD_LIST = valid;
+const WORD_LIST = [...valid, ...playable];
 
 const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
 
@@ -31,4 +32,4 @@ const initialState: State = {
 
 window.answer = ANSWER;
 
-export { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState };
+export { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState };
