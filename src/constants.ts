@@ -30,6 +30,12 @@ const initialState: State = {
     status: "in-progress",
 };
 
+const STUDENTS = {
+    Ellen: "/students/index.html",
+    Mark: "/students/index.html",
+    Kevin: "/students/index.html",
+};
+
 window.answer = ANSWER;
 
-export { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState };
+export { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState, STUDENTS };
