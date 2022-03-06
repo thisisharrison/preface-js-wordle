@@ -150,8 +150,8 @@ function paintRow(index: number, evaluation: Evaluation[]) {
         const result = evaluation[i % LENGTH];
         TILES_NODES[i].dataset["animation"] = "flip";
         TILES_NODES[i].style.animationDelay = `${(i % LENGTH) * 400}ms`;
-        TILES_NODES[i].onanimationend = () => {
-            TILES_NODES[i].dataset["status"] = result;
+        TILES_NODES[i].onanimationstart = () => {
+            setTimeout(() => (TILES_NODES[i].dataset["status"] = result), 250);
         };
     }
 }
@@ -244,6 +244,7 @@ function attemptsToGrid() {
 
     for (let i = 0; i < MAX_ATTEMPTS * LENGTH; i++) {
         TILES_NODES[i].innerText = GRID[i];
+        TILES_NODES[i].dataset["status"] = "reveal";
     }
 
     const { evaluation } = STATE;

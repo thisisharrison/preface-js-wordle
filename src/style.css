@@ -44,6 +44,12 @@ body {
   margin: 0;
 }
 
+html,
+body,
+#app {
+  height: 100%;
+}
+
 #game {
   width: 100%;
   max-width: var(--game-max-width);
@@ -51,6 +57,7 @@ body {
   height: 100%; /* calc(100% - var(--header-height)); */
   display: flex;
   flex-direction: column;
+  align-content: space-between;
 }
 
 #board-container {
@@ -141,6 +148,10 @@ body {
     color: var(--white);
   }
 
+  &[data-status="reveal"] {
+    color: transparent;
+  }
+
   &[data-animation="pop"] {
     animation-name: PopIn;
     animation-duration: 100ms;
@@ -167,6 +178,34 @@ body {
       transform: rotateX(0);
     }
     50% {
+      transform: rotateX(-90deg);
+    }
+    100% {
+      transform: rotateX(0);
+    }
+  }
+
+  &[data-animation="flip-in"] {
+    animation-name: FlipIn;
+    animation-duration: 250ms;
+    animation-timing-function: ease-in-out;
+  }
+  @keyframes FlipIn {
+    0% {
+      transform: rotateX(0);
+    }
+    100% {
+      transform: rotateX(-90deg);
+    }
+  }
+
+  &[data-animation="flip-out"] {
+    animation-name: FlipOut;
+    animation-duration: 250ms;
+    animation-timing-function: ease-in-out;
+  }
+  @keyframes FlipOut {
+    0% {
       transform: rotateX(-90deg);
     }
     100% {
