@@ -7,4 +7,8 @@ interface State {
     status: "success" | "fail" | "in-progress";
 }
 
-export type { Evaluation, State };
+interface Statistic {
+    [key: string]: number;
+}
+
+export type { Evaluation, State, Statistic };
