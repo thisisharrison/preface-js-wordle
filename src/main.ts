@@ -1,5 +1,9 @@
 import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState } from "./constants";
 import type { Evaluation, State } from "./types";
+import "../vendor/css/bootstrap.min.css";
+// import "../vendor/css/bootstrap-grid.css";
+// import "../vendor/css/bootstrap-reboot.css";
+import "../vendor/css/bootstrap-utilities.min.css";
 import "./style.css";
 
 declare global {

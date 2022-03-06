@@ -10,6 +10,7 @@
   --color-absent: #787c7e;
   --white: #ffffff;
   --black: #121213;
+  --grey: rgb(244, 245, 246);
   --toast-bg: rgb(24 24 24 / 80%);
 }
 
@@ -39,15 +40,47 @@
   src: url("./fonts/GalanoGrotesqueBold.otf") format("opentype");
 }
 
-body {
-  font-family: "GalanoGrotesque", "Open Sans", "Helvetica", "sans-serif";
-  margin: 0;
+/* Remove Bootstrap styling */
+.row,
+.row > *,
+button,
+div,
+h1,
+h2,
+h3,
+p {
+  display: unset;
+  flex-wrap: unset;
+  flex-shrink: unset;
+  flex: unset;
+  flex-direction: unset;
+  margin: unset;
+  padding: unset;
+  width: unset;
+  height: unset;
+  max-width: unset;
+  font-weight: unset;
+  font-size: unset;
+  color: unset;
+  border: unset;
+  opacity: unset;
 }
 
 html,
 body,
 #app {
   height: 100%;
+}
+
+body {
+  font-family: "GalanoGrotesque", "Open Sans", "Helvetica", "sans-serif";
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+nav {
+  border-bottom: 1px solid var(--grey);
 }
 
 #game {
