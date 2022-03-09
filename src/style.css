@@ -48,6 +48,7 @@ div,
 h1,
 h2,
 h3,
+h5,
 p {
   display: unset;
   flex-wrap: unset;
@@ -61,6 +62,7 @@ p {
   max-width: unset;
   font-weight: unset;
   font-size: unset;
+  line-height: unset;
   color: unset;
   border: unset;
   opacity: unset;
@@ -352,6 +354,27 @@ nav {
   font-size: 14px;
 }
 
+.modal {
+  h1,
+  h5 {
+    width: 100%;
+    text-align: center;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .modal-header {
+    button {
+      position: absolute;
+      right: 1em;
+    }
+  }
+
+  .modal-body {
+    text-align: center;
+  }
+}
+
 #statistics {
   display: flex;
   margin-bottom: 0;
@@ -418,6 +441,7 @@ nav {
   background-color: var(--color-absent);
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .graph-container .graph .graph-bar.highlight {
@@ -431,7 +455,7 @@ nav {
 
 .graph-container .graph .num-guesses {
   font-weight: bold;
-  color: var(--tile-text-color);
+  color: var(--white);
 }
 
 #statistics,
@@ -442,10 +466,11 @@ nav {
 .footer {
   display: flex;
   width: 100%;
+  margin-top: 8px;
 }
 
 .countdown {
-  border-right: 1px solid var(--color-tone-1);
+  border-right: 1px solid var(--black);
   padding-right: 12px;
   width: 50%;
 }
@@ -463,8 +488,8 @@ nav {
 }
 
 button#share-button {
-  background-color: var(--key-bg-correct);
-  color: var(--key-evaluated-text-color);
+  background-color: var(--color-correct);
+  color: var(--white);
   font-family: inherit;
   font-weight: bold;
   border-radius: 4px;
@@ -484,8 +509,8 @@ button#share-button {
 button#share-button:hover {
   opacity: 0.9;
 }
-button#share-button game-icon {
-  width: 24px;
-  height: 24px;
-  padding-left: 8px;
+button#share-button i {
+  margin-left: 8px;
+  font-size: 14px;
+  align-self: center;
 }

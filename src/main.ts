@@ -16,13 +16,14 @@ declare global {
 
 let STATE: State = initialState;
 
-let GRID: string[] = Array.from({ length: LENGTH * MAX_ATTEMPTS }).map((_) => "");
+let GRID: string[] = [];
 
-function buildGrid() {
+function buildGrid(length: number, maxLength: number) {
     const wrapper = document.createElement("div");
     wrapper.id = "board";
     let row = document.createElement("div");
     row.className = "row";
+    GRID = Array.from({ length: length * maxLength }).map((_) => "");
     GRID.forEach((_, i) => {
         if (i % LENGTH === 0 && i !== 0) {
             wrapper.appendChild(row);
@@ -53,7 +54,6 @@ function buildKeyboard() {
             const button = document.createElement("button");
             button.innerText = key;
             button.setAttribute("data-key", key);
-            button.onclick = handleButtonClick;
             return button;
         });
         const row = document.createElement("div");
@@ -62,6 +62,7 @@ function buildKeyboard() {
         KEYBOARD_NODES.push(...keyNodes);
         wrapper.append(row);
     }
+    wrapper.addEventListener("click", handleKeyboardEvent);
     document.querySelector("#keyboard-container")!.appendChild(wrapper);
     bindKeyboard();
 }
@@ -76,24 +77,43 @@ function createToast(message: string, className: "error" | "success" | "fail") {
     }, 1500);
 }
 
-function handleButtonClick(event: MouseEvent) {
-    const button = event.currentTarget;
-    if (!(button instanceof HTMLButtonElement)) return;
-    let key = button.dataset.key;
-    if (!key) return;
-    if (key === "←") key = "Backspace";
-    if (key === "↵") key = "Enter";
-    handleKeyboardEvent(key, event);
-}
-
 function bindKeyboard() {
-    document.addEventListener("keydown", (event) => {
-        const key = event.key;
-        handleKeyboardEvent(key, event);
-    });
+    document.addEventListener("keydown", handleKeyboardEvent);
+    const keyboard: HTMLDivElement = document.querySelector("#keyboard")!;
+    keyboard.addEventListener("click", handleKeyboardEvent);
 }
 
-function handleKeyboardEvent(key: string, event: KeyboardEvent | MouseEvent) {
+function unbindKeyboard() {
+    document.removeEventListener("keydown", handleKeyboardEvent);
+    const keyboard: HTMLDivElement = document.querySelector("#keyboard")!;
+    keyboard.removeEventListener("click", handleKeyboardEvent);
+}
+
+function isKeyboardEvent(event: KeyboardEvent | MouseEvent): event is KeyboardEvent {
+    return event.type === "keydown";
+}
+
+function isClickEvent(event: KeyboardEvent | MouseEvent): event is MouseEvent {
+    return event.type === "click";
+}
+
+function handleKeyboardEvent(event: KeyboardEvent | MouseEvent) {
+    let key = "";
+    if (isKeyboardEvent(event)) {
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+            return;
+        } else {
+            key = event.key;
+        }
+    } else if (isClickEvent(event)) {
+        const button = event.target;
+        if (!(button instanceof HTMLButtonElement)) return;
+        key = button.dataset.key!;
+        if (!key) return;
+        if (key === "←") key = "Backspace";
+        if (key === "↵") key = "Enter";
+    }
+
     const { attempts, attempt_index, status } = STATE;
 
     if (status === "success" || status === "fail") return;
@@ -149,6 +169,7 @@ function evaluate(string: string) {
 
 function paintRow(index: number, evaluation: Evaluation[]) {
     const tile_index = index * LENGTH;
+    unbindKeyboard();
 
     for (let i = tile_index; i < tile_index + LENGTH; i++) {
         const result = evaluation[i % LENGTH];
@@ -158,6 +179,9 @@ function paintRow(index: number, evaluation: Evaluation[]) {
             setTimeout(() => (TILES_NODES[i].dataset["status"] = result), 250);
         };
     }
+    setTimeout(() => {
+        bindKeyboard();
+    }, 400 * evaluation.length);
 }
 
 function bounce() {
@@ -241,9 +265,9 @@ function updateKeyboard() {
     });
 }
 
-function attemptsToGrid() {
+function attemptsToGrid(length: number, maxLength: number) {
     GRID = STATE.attempts.flatMap((word) => [...word.split("")]);
-    const remaining = Array.from({ length: MAX_ATTEMPTS * LENGTH - GRID.length }).map((_) => "");
+    const remaining = Array.from({ length: length * maxLength - GRID.length }).map((_) => "");
     GRID = [...GRID, ...remaining];
 
     for (let i = 0; i < MAX_ATTEMPTS * LENGTH; i++) {
@@ -261,32 +285,31 @@ function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
 }
 
-function loadFromStorage() {
+export function loadFromStorage(): null | State {
     const prevState = localStorage.getItem(STORAGE_KEY);
     if (!prevState) {
-        STATE = initialState;
-        return false;
+        return null;
     } else {
-        STATE = JSON.parse(prevState);
-        return true;
+        return JSON.parse(prevState);
     }
 }
 
-function syncState() {
-    attemptsToGrid();
+function syncState(length: number, maxLength: number) {
+    attemptsToGrid(length, maxLength);
     updateKeyboard();
 }
 
-function startGame() {
-    const previous = loadFromStorage();
-    buildGrid();
+function startGame(length: number, maxLength: number) {
+    const prevState = loadFromStorage();
+    STATE = prevState || initialState;
+    buildGrid(length, maxLength);
     buildKeyboard();
-    if (previous) {
-        syncState();
+    if (prevState) {
+        syncState(length, maxLength);
     }
 }
 
-startGame();
+startGame(LENGTH, MAX_ATTEMPTS);
 
 // @ts-ignore -- for debug
 document.querySelector("#clear").onclick = () => window.localStorage.clear();

@@ -1,3 +1,4 @@
+import { loadFromStorage } from "./main";
 import { Statistic } from "./types";
 
 const summaryTemplate = ({ gamesPlayed, gamesWon, currentStreak, maxStreak }: typeof mockData) => {
@@ -29,7 +30,7 @@ const createDistribution = (guess: number, numGuess: number, max: number) => `
 <div class="graph-container">
     <div class="guess">${guess}</div>
     <div class="graph">
-        <div class="graph-bar align-right highlight" style="width: ${numGuess === 0 ? 7 : (numGuess / max) * 100}%">
+        <div class="graph-bar align-right ${numGuess > 0 ? "highlight" : ""}" style="width: ${numGuess === 0 ? 7 : (numGuess / max) * 100}%">
             <div class="num-guesses">${numGuess}</div>
         </div>
     </div>
@@ -47,7 +48,9 @@ const createGraphData = (stat: Statistic) => {
 };
 
 const distributionTemplate = (graphData: string) => `
+<div>
 <h1>Guess Distribution</h1>
+</div>
 <div id="guess-distribution">
     ${graphData}
 </div>`;
@@ -75,7 +78,10 @@ const footerTemplate = () => {
         </div>
         </div>
         <div class="share">
-            <button id="share-button">Share</button>
+            <button id="share-button">
+                Share
+                <i class="bi bi-share"></i>
+            </button>
         </div>
     </div>`;
 };
@@ -88,22 +94,81 @@ const mockData = {
     guesses: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0, 6: 0, fail: 0 },
     maxStreak: 1,
     winPercentage: 100,
-};
+} as const;
+
+function createSummary(detail: typeof mockData) {
+    const summary = summaryTemplate(detail);
+    const graphData = createGraphData(detail.guesses);
+    const distribution = distributionTemplate(graphData);
+    const footer = footerTemplate();
+    return summary + distribution + footer;
+}
+
+function createShareableSummary() {
+    const history = loadFromStorage();
+    if (!history) {
+        alert("No data");
+        return;
+    }
+    let shareText = "";
+    for (const row of history.evaluation) {
+        let rowString = ``;
+        for (const status of row) {
+            switch (status) {
+                case "absent":
+                    rowString += "⬛";
+                    break;
+                case "present":
+                    rowString += "🟨";
+                    break;
+                case "correct":
+                    rowString += "🟩";
+                    break;
+            }
+        }
+        rowString += "\n";
+        shareText += rowString;
+    }
+
+    alert(shareText);
+    copyText(shareText);
+}
+
+function copyText(text: string) {
+    const element = document.createElement("textarea");
+    element.value = text;
+    element.style.position = "absolute";
+    element.style.left = "-9999px";
+    element.setAttribute("readonly", "");
+    document.body.appendChild(element);
+
+    const selection = document.getSelection();
+    const selected = selection != null && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+    element.select();
+    document.execCommand("copy");
+    document.body.removeChild(element);
+
+    if (selection && selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+    }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-    const summary = summaryTemplate(mockData);
+    document.querySelector("#stat-modal-body")!.innerHTML = createSummary(mockData);
 
-    const graphData = createGraphData(mockData.guesses);
-    const distribution = distributionTemplate(graphData);
-
-    const footer = footerTemplate();
-
-    document.querySelector("#stat-modal-body")!.innerHTML = summary + distribution + footer;
+    const share: HTMLButtonElement = document.querySelector("#share-button")!;
+    share.onclick = createShareableSummary;
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    let distance = tomorrow.getTime() / 1000 - today.getTime() / 1000;
 
     setInterval(() => {
-        // Calculate next game time
-        const currTime = new Date().getTime() / 1000;
-        const time = prettyTime(currTime);
+        const time = prettyTime(distance);
         document.querySelector(".statistic.timer")!.textContent = time;
+        distance -= 1;
     }, 1000);
 });
