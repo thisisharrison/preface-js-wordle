@@ -15,7 +15,10 @@ const RATING: Record<Evaluation, number> = {
     correct: 2,
 };
 
-const ANSWER: string = playable[0];
+const genesis = new Date(2022, 2, 1);
+const today = new Date();
+const index = Math.floor((today.getTime() - genesis.getTime()) / 86400 / 1000);
+const ANSWER: string = playable[index];
 
 const WORD_LIST = [...valid, ...playable];
 

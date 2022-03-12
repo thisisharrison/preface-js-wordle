@@ -17,45 +17,42 @@
     <title>Preface Wordle</title>
   </head>
   <body>
-    <!-- Nav -->
-    <nav class="navbar navbar-light fixed-top">
-      <div id="nav-container" class="container-fluid">
-        <a class="navbar-brand left" href=".">
-          <img
-            src="/src/assets/preface_logo.svg"
-            alt=""
-            width="30"
-            height="24"
-          />
-        </a>
-        <div class="title">Preface Wordle</div>
-        <div class="right" id="nav-container-right">
-          <button
-            type="button"
-            id="stat-button"
-            data-bs-toggle="modal"
-            data-bs-target="#statModal"
-          >
-            <i
-              type="button"
-              class="bi bi-bar-chart"
-              style="font-size: 20px; margin-right: 6px"
-            ></i>
-          </button>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Game div -->
     <div id="app">
+      <!-- Nav -->
+      <nav class="navbar navbar-light">
+        <div id="nav-container" class="container-fluid">
+          <a class="navbar-brand left" href=".">
+            <img
+              src="/src/assets/preface_logo.svg"
+              alt=""
+              width="30"
+              height="24"
+            />
+          </a>
+          <div class="title">Preface Wordle</div>
+          <div class="right" id="nav-container-right">
+            <button
+              type="button"
+              id="stat-button"
+              data-bs-toggle="modal"
+              data-bs-target="#statModal"
+            >
+              <i type="button" class="bi bi-bar-chart"></i>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Game div -->
+
       <div id="game">
         <div id="board-container"></div>
         <div id="keyboard-container"></div>
       </div>
     </div>
-    <button class="btn btn-outline-danger" id="clear" onclick="clearAll">
+    <!-- <button class="btn btn-outline-danger" id="clear" onclick="clearAll">
       clear storage
-    </button>
+    </button> -->
 
     <!-- Stats Modal -->
     <div
