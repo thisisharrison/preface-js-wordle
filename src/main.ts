@@ -80,7 +80,6 @@ function buildKeyboard() {
     }
     wrapper.addEventListener("click", handleKeyboardEvent);
     document.querySelector("#keyboard-container")!.appendChild(wrapper);
-    bindKeyboard();
 }
 
 function createToast(message: string, className: "error" | "success" | "fail") {
@@ -97,12 +96,14 @@ function bindKeyboard() {
     document.addEventListener("keydown", handleKeyboardEvent);
     const keyboard: HTMLDivElement = document.querySelector("#keyboard")!;
     keyboard.addEventListener("click", handleKeyboardEvent);
+    console.log("bound");
 }
 
 function unbindKeyboard() {
     document.removeEventListener("keydown", handleKeyboardEvent);
     const keyboard: HTMLDivElement = document.querySelector("#keyboard")!;
     keyboard.removeEventListener("click", handleKeyboardEvent);
+    console.log("unbound");
 }
 
 function isKeyboardEvent(event: KeyboardEvent | MouseEvent): event is KeyboardEvent {
@@ -164,7 +165,6 @@ function handleKeyboardEvent(event: KeyboardEvent | MouseEvent) {
         console.log(STATE);
         if (current_attempt.length < LENGTH) return;
         evaluateAndPaint(current_attempt);
-        saveToStorage();
     } else {
         event.preventDefault();
     }
@@ -197,7 +197,7 @@ function paintRow(index: number, evaluation: Evaluation[]) {
     }
     setTimeout(() => {
         bindKeyboard();
-    }, 400 * evaluation.length);
+    }, 500 * LENGTH);
 }
 
 function bounce() {
@@ -234,6 +234,7 @@ function evaluateAndPaint(attempt: string) {
         } else {
             STATE.attempt_index += 1;
         }
+        saveToStorage();
     } catch (error) {
         // @ts-ignore
         createToast(`${error.message}`, "fail");
@@ -320,15 +321,13 @@ function startGame(length: number, maxLength: number) {
     STATE = prevState || initialState;
     buildGrid(length, maxLength);
     buildKeyboard();
+    bindKeyboard();
     if (prevState) {
         syncState(length, maxLength);
     }
 }
 
 startGame(LENGTH, MAX_ATTEMPTS);
-
-// @ts-ignore -- for debug
-document.querySelector("#clear").onclick = () => window.localStorage.clear();
 
 window.state = STATE;
 window.grid = GRID;

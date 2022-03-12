@@ -407,6 +407,18 @@ nav {
   border-radius: 5px;
   text-align: center;
   font-size: 14px;
+  z-index: 9999;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 2s linear;
+
+  /* overriding bootstrap */
+  &:not(.showing):not(.show) {
+    opacity: 1;
+  }
+  &.hide {
+    display: block;
+  }
 }
 
 .modal {
