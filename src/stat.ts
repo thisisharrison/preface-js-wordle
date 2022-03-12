@@ -1,8 +1,7 @@
 import { loadFromStorage } from "./main";
 import { Statistic } from "./types";
 
-const summaryTemplate = ({ gamesPlayed, gamesWon, currentStreak, maxStreak }: typeof mockData) => {
-    const winRate = gamesWon / gamesPlayed;
+const summaryTemplate = ({ gamesPlayed, winPercentage, currentStreak, maxStreak }: Statistic) => {
     return `<div id="statistics">
         <div class="statistic-container">
             <div class="statistic">${gamesPlayed}</div>
@@ -10,7 +9,7 @@ const summaryTemplate = ({ gamesPlayed, gamesWon, currentStreak, maxStreak }: ty
         </div>
     
         <div class="statistic-container">
-            <div class="statistic">${winRate}</div>
+            <div class="statistic">${winPercentage}</div>
             <div class="label">Win %</div>
         </div>
     
@@ -37,7 +36,7 @@ const createDistribution = (guess: number, numGuess: number, max: number) => `
 </div>
 `;
 
-const createGraphData = (stat: Statistic) => {
+const createGraphData = (stat: Record<string, number>) => {
     const max = Math.max(...Object.values(stat));
     return Object.entries(stat).reduce((acc, cur) => {
         const [guess, numGuess] = cur;
@@ -86,32 +85,24 @@ const footerTemplate = () => {
     </div>`;
 };
 
-const mockData = {
-    averageGuesses: 3,
-    currentStreak: 1,
-    gamesPlayed: 1,
-    gamesWon: 1,
-    guesses: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0, 6: 0, fail: 0 },
-    maxStreak: 1,
-    winPercentage: 100,
-} as const;
-
-function createSummary(detail: typeof mockData) {
-    const summary = summaryTemplate(detail);
-    const graphData = createGraphData(detail.guesses);
+function createSummary() {
+    const { prevStats } = loadFromStorage();
+    console.log("prevStats", prevStats);
+    const summary = summaryTemplate(prevStats);
+    const graphData = createGraphData(prevStats.guesses);
     const distribution = distributionTemplate(graphData);
     const footer = footerTemplate();
     return summary + distribution + footer;
 }
 
 function createShareableSummary() {
-    const history = loadFromStorage();
-    if (!history) {
+    const data = loadFromStorage();
+    if (!data?.prevState) {
         alert("No data");
         return;
     }
     let shareText = "";
-    for (const row of history.evaluation) {
+    for (const row of data.prevState.evaluation) {
         let rowString = ``;
         for (const status of row) {
             switch (status) {
@@ -155,9 +146,12 @@ function copyText(text: string) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    document.querySelector("#stat-modal-body")!.innerHTML = createSummary(mockData);
+export function updateStatModal() {
+    document.querySelector("#stat-modal-body")!.innerHTML = createSummary();
+}
 
+document.addEventListener("DOMContentLoaded", () => {
+    updateStatModal();
     const share: HTMLButtonElement = document.querySelector("#share-button")!;
     share.onclick = createShareableSummary;
     const today = new Date();

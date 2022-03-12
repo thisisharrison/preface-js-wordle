@@ -358,7 +358,7 @@ nav {
       font-family: inherit;
       font-weight: bold;
       border: 0;
-      padding: 0;
+      padding: inherit;
       height: 58px;
       border-radius: 4px;
       cursor: pointer;

@@ -1,10 +1,11 @@
-import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, ANSWER, WORD_LIST, KEYS, STORAGE_KEY, initialState } from "./constants";
-import type { Evaluation, State } from "./types";
+import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, WORD_LIST, playable, KEYS, STORAGE_KEY, VARIANT_NAME, initialState, initialStats } from "./constants";
+import type { Evaluation, State, Statistic } from "./types";
 // import "../vendor/css/bootstrap.min.css";
 // import "../vendor/css/bootstrap-grid.css";
 // import "../vendor/css/bootstrap-reboot.css";
 // import "../vendor/css/bootstrap-utilities.min.css";
 import "./style.css";
+import { updateStatModal } from "./stat";
 
 declare global {
     interface Window {
@@ -16,7 +17,12 @@ declare global {
 
 let STATE: State = initialState;
 
+let STATS: Statistic = initialStats;
+
 let GRID: string[] = [];
+
+let ANSWER_INDEX = 0;
+let ANSWER: string = playable[ANSWER_INDEX];
 
 function buildGrid(length: number, maxLength: number) {
     const wrapper = document.createElement("div");
@@ -299,16 +305,56 @@ function attemptsToGrid(length: number, maxLength: number) {
 }
 
 function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+    localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}`, JSON.stringify(STATE));
+
+    if (STATE.status !== "in-progress") {
+        STATS.gamesPlayed += 1;
+    }
+
+    if (STATE.status === "success") {
+        const newGuessCount = STATS.guesses[STATE.attempt_index + 1] + 1;
+
+        STATS.gamesWon += 1;
+        STATS.winPercentage = Math.round((STATS.gamesWon / STATS.gamesPlayed) * 100);
+        STATS.guesses = { ...STATS.guesses, [STATE.attempt_index + 1]: newGuessCount };
+        STATS.currentStreak += 1;
+        STATS.maxStreak = Math.max(STATS.maxStreak, STATS.currentStreak);
+        STATS.averageGuesses =
+            Object.keys(STATS.guesses).reduce((acc, cur) => {
+                if (cur === "fail") return acc;
+                acc += STATS.guesses[cur];
+                return acc;
+            }, 0) / LENGTH;
+    } else if (STATE.status === "fail") {
+        STATS.guesses = { ...STATS.guesses, fail: ++STATS.guesses.fail };
+        STATS.currentStreak = 0;
+        STATS.winPercentage = Math.round((STATS.gamesWon / STATS.gamesPlayed) * 100);
+    }
+
+    if (STATE.status !== "in-progress") {
+        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}_STATS`, JSON.stringify(STATS));
+        updateStatModal();
+    }
 }
 
-export function loadFromStorage(): null | State {
-    const prevState = localStorage.getItem(STORAGE_KEY);
-    if (!prevState) {
-        return null;
-    } else {
-        return JSON.parse(prevState);
+export function loadFromStorage(): { prevState: State; prevStats: Statistic } {
+    const prevState = localStorage.getItem(`${STORAGE_KEY}_${VARIANT_NAME}`);
+    const prevStats = localStorage.getItem(`${STORAGE_KEY}_${VARIANT_NAME}_STATS`);
+    if (!prevState || !prevStats) {
+        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}`, JSON.stringify(initialState));
+        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}_STATS`, JSON.stringify(initialStats));
+        return { prevState: initialState, prevStats: initialStats };
     }
+    return { prevState: JSON.parse(prevState), prevStats: JSON.parse(prevStats) };
+}
+
+function nextGame(state: State): boolean {
+    if (state.status !== "in-progress") {
+        ANSWER_INDEX = Math.floor(Math.random() * playable.length);
+        ANSWER = playable[ANSWER_INDEX];
+        return true;
+    }
+    return false;
 }
 
 function syncState(length: number, maxLength: number) {
@@ -317,8 +363,13 @@ function syncState(length: number, maxLength: number) {
 }
 
 function startGame(length: number, maxLength: number) {
-    const prevState = loadFromStorage();
+    const { prevState, prevStats } = loadFromStorage();
     STATE = prevState || initialState;
+    STATS = prevStats || initialStats;
+    if (nextGame(prevState)) {
+        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}`, JSON.stringify(initialState));
+        STATE = initialState;
+    }
     buildGrid(length, maxLength);
     buildKeyboard();
     bindKeyboard();
@@ -328,6 +379,3 @@ function startGame(length: number, maxLength: number) {
 }
 
 startGame(LENGTH, MAX_ATTEMPTS);
-
-window.state = STATE;
-window.grid = GRID;

@@ -8,7 +8,13 @@ interface State {
 }
 
 interface Statistic {
-    [key: string]: number;
+    averageGuesses: number;
+    currentStreak: number;
+    gamesPlayed: number;
+    gamesWon: number;
+    guesses: Record<string, number>;
+    maxStreak: number;
+    winPercentage: number;
 }
 
 export type { Evaluation, State, Statistic };
