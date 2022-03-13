@@ -1,26 +1,21 @@
 import { valid, playable } from "./fixtures/words.json";
 import type { Evaluation, State, Statistic } from "./types";
 
-const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
-
 const LENGTH = 5;
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 6;
 const TILES_NODES: HTMLDivElement[] = [];
 const TILES_ROWS: HTMLDivElement[] = [];
 const KEYBOARD_NODES: HTMLButtonElement[] = [];
-
 const RATING: Record<Evaluation, number> = {
     absent: 0,
     present: 1,
     correct: 2,
 };
-
 const WORD_LIST = [...valid, ...playable];
-
 const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
+const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
 
 const STORAGE_KEY = "@@@PREFACE-WORDLE";
-
 const VARIANT_NAME = "DEFAULT";
 
 const initialState: State = {
@@ -28,6 +23,7 @@ const initialState: State = {
     attempt_index: 0,
     evaluation: [],
     status: "in-progress",
+    timestamp: new Date(2022, 2, 11).getTime(),
 };
 
 const initialStats: Statistic = {

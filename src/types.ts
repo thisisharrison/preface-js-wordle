@@ -5,6 +5,7 @@ interface State {
     attempt_index: number;
     evaluation: Evaluation[][];
     status: "success" | "fail" | "in-progress";
+    timestamp: number;
 }
 
 interface Statistic {

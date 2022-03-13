@@ -1,9 +1,5 @@
 import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, WORD_LIST, playable, KEYS, STORAGE_KEY, VARIANT_NAME, initialState, initialStats } from "./constants";
 import type { Evaluation, State, Statistic } from "./types";
-// import "../vendor/css/bootstrap.min.css";
-// import "../vendor/css/bootstrap-grid.css";
-// import "../vendor/css/bootstrap-reboot.css";
-// import "../vendor/css/bootstrap-utilities.min.css";
 import "./style.css";
 import { updateStatModal } from "./stat";
 
@@ -21,7 +17,11 @@ let STATS: Statistic = initialStats;
 
 let GRID: string[] = [];
 
-let ANSWER_INDEX = 0;
+const offsetFromDate = new Date(2022, 0, 1).getTime();
+const msOffset = Date.now() - offsetFromDate;
+const dayOffset = msOffset / 1000 / 60 / 60 / 24;
+
+let ANSWER_INDEX = Math.floor(dayOffset);
 let ANSWER: string = playable[ANSWER_INDEX];
 
 function buildGrid(length: number, maxLength: number) {
