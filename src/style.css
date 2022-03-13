@@ -118,7 +118,8 @@ nav {
   .right {
     display: flex;
     width: 70px;
-    justify-content: space-between;
+    justify-content: flex-end;
+    align-items: flex-end;
 
     i,
     svg {
@@ -129,6 +130,7 @@ nav {
       padding: 0;
       border: none;
       font-size: 14px;
+      margin-left: 8px;
 
       &:focus {
         box-shadow: none;
@@ -582,9 +584,13 @@ button#share-button i {
   align-self: center;
 }
 
-.dropdown-menu.show {
-  .dropdown-item:active {
-    background-color: var(--preface-blue);
+.dropdown-menu {
+  border: none;
+
+  &.show {
+    .dropdown-item:active {
+      background-color: var(--preface-blue);
+    }
   }
 }
 

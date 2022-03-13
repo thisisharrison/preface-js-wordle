@@ -3,27 +3,27 @@ import type { Evaluation, State, Statistic } from "./types";
 
 const LENGTH = 5;
 const MAX_ATTEMPTS = 6;
-const TILES_NODES: HTMLDivElement[] = [];
-const TILES_ROWS: HTMLDivElement[] = [];
-const KEYBOARD_NODES: HTMLButtonElement[] = [];
+const WORD_LIST = [...valid, ...playable];
+const offsetFromDate = new Date(2022, 0, 1).getTime();
+const msOffset = Date.now() - offsetFromDate;
+const dayOffset = msOffset / 1000 / 60 / 60 / 24;
+const ANSWER_INDEX = Math.floor(dayOffset);
+const ANSWER: string = playable[ANSWER_INDEX];
+
 const RATING: Record<Evaluation, number> = {
     absent: 0,
     present: 1,
     correct: 2,
 };
-const WORD_LIST = [...valid, ...playable];
-const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
-const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
 
-const STORAGE_KEY = "@@@PREFACE-WORDLE";
-const VARIANT_NAME = "DEFAULT";
+const CONGRATULATIONS = ["Genius", "Magnificent", "Impressive", "Splendid", "Great", "Phew"];
 
 const initialState: State = {
     attempts: Array.from({ length: MAX_ATTEMPTS }).map((_) => ""),
     attempt_index: 0,
     evaluation: [],
     status: "in-progress",
-    timestamp: new Date(2022, 2, 11).getTime(),
+    timestamp: new Date(),
 };
 
 const initialStats: Statistic = {
@@ -42,4 +42,4 @@ const STUDENTS = {
     Kevin: "/students/index.html",
 };
 
-export { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, WORD_LIST, playable, KEYS, STORAGE_KEY, VARIANT_NAME, initialState, initialStats, STUDENTS };
+export { LENGTH, MAX_ATTEMPTS, ANSWER, CONGRATULATIONS, RATING, WORD_LIST, playable, initialState, initialStats, STUDENTS };

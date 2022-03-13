@@ -1,36 +1,59 @@
-import { CONGRATULATIONS, LENGTH, MAX_ATTEMPTS, TILES_NODES, TILES_ROWS, KEYBOARD_NODES, RATING, WORD_LIST, playable, KEYS, STORAGE_KEY, VARIANT_NAME, initialState, initialStats } from "./constants";
-import type { Evaluation, State, Statistic } from "./types";
-import "./style.css";
+import { LENGTH, MAX_ATTEMPTS, ANSWER, CONGRATULATIONS, RATING, WORD_LIST, initialState, initialStats } from "./constants";
 import { updateStatModal } from "./stat";
+import type { Evaluation, State } from "./types";
+import "./style.css";
 
-declare global {
-    interface Window {
-        state: typeof STATE;
-        grid: typeof GRID;
-        answer: string;
+const TOTAL_TILES = LENGTH * MAX_ATTEMPTS;
+const TILES = Array.from({ length: LENGTH * MAX_ATTEMPTS }).map((_) => "");
+const TILES_NODES: HTMLDivElement[] = [];
+const TILES_ROWS: HTMLDivElement[] = [];
+const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
+const KEYBOARD: HTMLDivElement = document.createElement("div");
+const KEYBOARD_NODES: HTMLButtonElement[] = [];
+const KEYBOARD_MAP: Map<string, Evaluation | ""> = KEYS.flatMap((row) => [...row.split("")]).reduce((acc, cur) => {
+    if ("↵←".includes(cur)) return acc;
+    return acc.set(cur, "");
+}, new Map());
+
+let STATE = initialState;
+
+/** Game start logic */
+function startGame() {
+    buildArtifacts();
+    const prevGame = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState, isGameValid);
+    reloadGame(prevGame);
+    STATE = prevGame;
+    startInteraction();
+}
+
+/** Load previous game from storage */
+function reloadGame(prevGame: State) {
+    const { attempts, evaluation } = prevGame;
+    const prevTiles = attempts.flatMap((word) => [...word.split("")]);
+    for (let i = 0; i < prevTiles.length; i++) {
+        const char = prevTiles[i];
+        TILES[i] = char;
+        TILES_NODES[i].textContent = char;
+        TILES_NODES[i].dataset["status"] = "reveal";
+    }
+
+    for (let i = 0; i < evaluation.length; i++) {
+        paintGame(i, evaluation[i]);
     }
 }
 
-let STATE: State = initialState;
+/** Can be skipped if student's template has the board and keyboard HTML */
+function buildArtifacts() {
+    buildBoard();
+    buildKeyboard();
+}
 
-let STATS: Statistic = initialStats;
-
-let GRID: string[] = [];
-
-const offsetFromDate = new Date(2022, 0, 1).getTime();
-const msOffset = Date.now() - offsetFromDate;
-const dayOffset = msOffset / 1000 / 60 / 60 / 24;
-
-let ANSWER_INDEX = Math.floor(dayOffset);
-let ANSWER: string = playable[ANSWER_INDEX];
-
-function buildGrid(length: number, maxLength: number) {
+function buildBoard() {
     const wrapper = document.createElement("div");
     wrapper.id = "board";
     let row = document.createElement("div");
     row.className = "row";
-    GRID = Array.from({ length: length * maxLength }).map((_) => "");
-    GRID.forEach((_, i) => {
+    TILES.forEach((_, i) => {
         if (i % LENGTH === 0 && i !== 0) {
             wrapper.appendChild(row);
             TILES_ROWS.push(row);
@@ -52,8 +75,7 @@ function buildGrid(length: number, maxLength: number) {
 }
 
 function buildKeyboard() {
-    const wrapper = document.createElement("div");
-    wrapper.id = "keyboard";
+    KEYBOARD.id = "keyboard";
     for (let i = 0; i < KEYS.length; i++) {
         let keys = KEYS[i];
         const keyChars = keys.split("");
@@ -82,10 +104,9 @@ function buildKeyboard() {
         } else {
             row.append(...keyNodes);
         }
-        wrapper.append(row);
+        KEYBOARD.append(row);
     }
-    wrapper.addEventListener("click", handleKeyboardEvent);
-    document.querySelector("#keyboard-container")!.appendChild(wrapper);
+    document.querySelector("#keyboard-container")!.appendChild(KEYBOARD);
 }
 
 function createToast(message: string, className: "error" | "success" | "fail") {
@@ -93,60 +114,69 @@ function createToast(message: string, className: "error" | "success" | "fail") {
     toast.classList.add("toast", className, "fade");
     toast.textContent = message;
     document.body.appendChild(toast);
+    hideToast(toast);
+}
+
+function hideToast(toast: HTMLDivElement) {
     setTimeout(() => {
         document.body.removeChild(toast);
     }, 1500);
 }
 
-function bindKeyboard() {
-    document.addEventListener("keydown", handleKeyboardEvent);
-    const keyboard: HTMLDivElement = document.querySelector("#keyboard")!;
-    keyboard.addEventListener("click", handleKeyboardEvent);
-    console.log("bound");
+/** Bind events */
+function startInteraction() {
+    KEYBOARD.addEventListener("click", handleClickEvent);
+    document.addEventListener("keydown", handlePressEvent);
+    console.log("Interaction started");
 }
 
-function unbindKeyboard() {
-    document.removeEventListener("keydown", handleKeyboardEvent);
-    const keyboard: HTMLDivElement = document.querySelector("#keyboard")!;
-    keyboard.removeEventListener("click", handleKeyboardEvent);
-    console.log("unbound");
+/** Unbind events during animation */
+function stopInteraction() {
+    KEYBOARD.removeEventListener("click", handleClickEvent);
+    document.removeEventListener("keydown", handlePressEvent);
+    console.log("Interaction stopped");
 }
 
-function isKeyboardEvent(event: KeyboardEvent | MouseEvent): event is KeyboardEvent {
-    return event.type === "keydown";
-}
-
-function isClickEvent(event: KeyboardEvent | MouseEvent): event is MouseEvent {
-    return event.type === "click";
-}
-
-function handleKeyboardEvent(event: KeyboardEvent | MouseEvent) {
-    let key = "";
-    if (isKeyboardEvent(event)) {
-        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
-            return;
-        } else {
-            key = event.key;
-        }
-    } else if (isClickEvent(event)) {
-        const button = event.target;
-        if (!(button instanceof HTMLButtonElement)) return;
-        key = button.dataset.key!;
-        if (!key) return;
-        if (key === "←") key = "Backspace";
-        if (key === "↵") key = "Enter";
+/** Button click events */
+function handleClickEvent(event: MouseEvent) {
+    const button = event.target;
+    if (!(button instanceof HTMLButtonElement)) {
+        return;
     }
+    let key = button.dataset.key;
+    if (!key) {
+        return;
+    }
+    if (key === "←") {
+        key = "Backspace";
+    }
+    if (key === "↵") {
+        key = "Enter";
+    }
+    evaluateKey(key);
+}
 
+/** Keyboard press events */
+function handlePressEvent(event: KeyboardEvent) {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+        return;
+    }
+    const key = event.key;
+    evaluateKey(key);
+}
+
+/** Update TILES and TILES_NODES */
+function evaluateKey(key: string) {
     const { attempts, attempt_index, status } = STATE;
 
     if (status === "success" || status === "fail") return;
     const current_attempt = attempts[attempt_index];
     const current_length = current_attempt.length;
 
-    let next = GRID.findIndex((_) => _ === "");
+    let next = TILES.findIndex((_) => _ === "");
 
     if (next === -1) {
-        next = GRID.length;
+        next = TOTAL_TILES;
     }
     const regex = new RegExp("^[a-zA-Z]$");
 
@@ -155,7 +185,7 @@ function handleKeyboardEvent(event: KeyboardEvent | MouseEvent) {
         TILES_NODES[next].textContent = key;
         TILES_NODES[next].dataset["status"] = "tbd";
         TILES_NODES[next].dataset["animation"] = "pop";
-        GRID[next] = key;
+        TILES[next] = key;
         attempts[attempt_index] += key;
         return;
     }
@@ -164,19 +194,22 @@ function handleKeyboardEvent(event: KeyboardEvent | MouseEvent) {
         if (current_attempt === "") return;
         TILES_NODES[next - 1].textContent = "";
         TILES_NODES[next - 1].dataset["status"] = "empty";
-        GRID[next - 1] = "";
+        TILES[next - 1] = "";
         attempts[attempt_index] = current_attempt.slice(0, current_length - 1);
-    } else if (key === "Enter") {
+        return;
+    }
+
+    if (key === "Enter") {
         // to debug
         console.log(STATE);
         if (current_attempt.length < LENGTH) return;
-        evaluateAndPaint(current_attempt);
-    } else {
-        event.preventDefault();
+        evaluateAttempt(current_attempt);
+        return;
     }
 }
 
-function evaluate(string: string) {
+/** Return evaluation of the string against ANSWER */
+function evaluateWord(string: string) {
     const evaluation: Evaluation[] = ANSWER.split("").map((char, i) => {
         if (string[i] === char) {
             return "correct";
@@ -189,43 +222,16 @@ function evaluate(string: string) {
     return evaluation;
 }
 
-function paintRow(index: number, evaluation: Evaluation[]) {
-    const tile_index = index * LENGTH;
-    unbindKeyboard();
-
-    for (let i = tile_index; i < tile_index + LENGTH; i++) {
-        const result = evaluation[i % LENGTH];
-        TILES_NODES[i].dataset["animation"] = "flip";
-        TILES_NODES[i].style.animationDelay = `${(i % LENGTH) * 400}ms`;
-        TILES_NODES[i].onanimationstart = () => {
-            setTimeout(() => (TILES_NODES[i].dataset["status"] = result), 250);
-        };
-    }
-    setTimeout(() => {
-        bindKeyboard();
-    }, 500 * LENGTH);
-}
-
-function bounce() {
-    const { attempt_index } = STATE;
-    const start = attempt_index * LENGTH;
-    for (let i = start; i < start + 5; i++) {
-        TILES_NODES[i].dataset["animation"] = "win";
-        TILES_NODES[i].style.animationDelay = `${(i % LENGTH) * 100}ms`;
-    }
-}
-
-function evaluateAndPaint(attempt: string) {
+/** Paint and animate the guess */
+function evaluateAttempt(attempt: string) {
     const { attempt_index } = STATE;
     try {
         if (!WORD_LIST.includes(attempt)) {
             throw new Error(`${attempt.toUpperCase()} not in word list`);
         }
-        const results = evaluate(attempt);
+        const results = evaluateWord(attempt);
         STATE.evaluation.push(results);
-
-        paintRow(attempt_index, results);
-        updateKeyboard();
+        paintGame(attempt_index, results);
 
         if (ANSWER === attempt) {
             STATE.status = "success";
@@ -240,7 +246,12 @@ function evaluateAndPaint(attempt: string) {
         } else {
             STATE.attempt_index += 1;
         }
-        saveToStorage();
+
+        saveToStorage("@@@PREFACE_WORDLE_GAME", STATE);
+
+        if (STATE.status !== "in-progress") {
+            updateStats();
+        }
     } catch (error) {
         // @ts-ignore
         createToast(`${error.message}`, "fail");
@@ -253,129 +264,121 @@ function evaluateAndPaint(attempt: string) {
     }
 }
 
-const isNotUndefined = (char: string | undefined): char is string => {
-    return !!char;
-};
+function paintGame(attempt_index: number, results: Evaluation[]) {
+    stopInteraction();
+    paint(attempt_index, results);
+    setTimeout(() => {
+        startInteraction();
+    }, 500 * LENGTH);
+}
 
-function updateKeyboard() {
-    const { evaluation } = STATE;
-    const flatEvaluation = evaluation.flatMap((e) => [...e]);
-    const chars = GRID.filter(isNotUndefined);
-    const summary: Map<string, Evaluation> = new Map();
+function paint(index: number, evaluation: Evaluation[]) {
+    const tile_index = index * LENGTH;
 
-    for (let i = 0; i < chars.length; i++) {
-        const char = chars[i];
-        const currEval = flatEvaluation[i];
-        const curr = RATING[currEval];
-        const prev = summary.get(char);
-        if (!prev) {
-            summary.set(chars[i], currEval);
-        } else {
-            if (curr < RATING[prev]) {
-                continue;
-            } else if (curr >= RATING[prev]) {
-                summary.set(chars[i], currEval);
-            }
+    for (let i = tile_index; i < tile_index + LENGTH; i++) {
+        const charIndex = i % LENGTH;
+        const result = evaluation[charIndex];
+        const key = TILES_NODES[i].textContent;
+        TILES_NODES[i].dataset["animation"] = "flip";
+        TILES_NODES[i].style.animationDelay = `${charIndex * 400}ms`;
+        TILES_NODES[i].onanimationstart = () => {
+            setTimeout(() => (TILES_NODES[i].dataset["status"] = result), 250);
+            setTimeout(() => paintKeyboard(key, result), 250);
+        };
+    }
+}
+
+function bounce() {
+    const { attempt_index } = STATE;
+    const start = attempt_index * LENGTH;
+    for (let i = start; i < start + LENGTH; i++) {
+        TILES_NODES[i].dataset["animation"] = "win";
+        TILES_NODES[i].style.animationDelay = `${(i % LENGTH) * 100}ms`;
+    }
+}
+
+function paintKeyboard(key: string | null, newState: Evaluation) {
+    if (!key) return;
+    const prevState = KEYBOARD_MAP.get(key);
+    if (prevState == undefined) {
+        return;
+    }
+    if (prevState === "") {
+        KEYBOARD_MAP.set(key, newState);
+    } else {
+        const prevRating = RATING[prevState];
+        const newRating = RATING[newState];
+        if (newRating < prevRating) {
+            return;
+        } else if (newRating > prevRating) {
+            KEYBOARD_MAP.set(key, newState);
         }
     }
-
-    KEYBOARD_NODES.forEach((button) => {
+    const index = KEYBOARD_NODES.findIndex((button) => {
         const char = button.innerHTML;
-        const status = summary.get(char);
-        if (status) {
-            button.dataset["status"] = status;
-        }
+        return char === key;
     });
+    KEYBOARD_NODES[index].dataset["status"] = KEYBOARD_MAP.get(key);
 }
 
-function attemptsToGrid(length: number, maxLength: number) {
-    GRID = STATE.attempts.flatMap((word) => [...word.split("")]);
-    const remaining = Array.from({ length: length * maxLength - GRID.length }).map((_) => "");
-    GRID = [...GRID, ...remaining];
+/**
+ * Evaluate if it should be a new game
+ * Wordle's rule is one game per day, but we can customize it here
+ * */
+function isGameValid(state: State) {
+    const { timestamp } = state;
+    return isToday(timestamp);
+}
 
-    for (let i = 0; i < MAX_ATTEMPTS * LENGTH; i++) {
-        TILES_NODES[i].innerText = GRID[i];
-        TILES_NODES[i].dataset["status"] = "reveal";
+function isToday(timestamp: Date) {
+    const today = new Date();
+    const check = new Date(timestamp);
+    return today.toDateString() === check.toDateString();
+}
+
+/** Load previous game conditionally */
+export function loadFromStorage(key: string, initialItem: any, shouldRender?: (state: State) => boolean) {
+    const item = localStorage.getItem(key);
+    if (!item) {
+        saveToStorage(key, initialItem);
+        return initialItem;
     }
-
-    const { evaluation } = STATE;
-    for (let i = 0; i < evaluation.length; i++) {
-        paintRow(i, evaluation[i]);
+    const parsedItem = JSON.parse(item);
+    if (!shouldRender) {
+        return parsedItem;
+    } else if (shouldRender(parsedItem)) {
+        return parsedItem;
     }
 }
 
-function saveToStorage() {
-    localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}`, JSON.stringify(STATE));
+/** Load new game */
+function saveToStorage(key: string, item: any) {
+    localStorage.setItem(key, JSON.stringify(item));
+}
 
-    if (STATE.status !== "in-progress") {
-        STATS.gamesPlayed += 1;
-    }
-
+function updateStats() {
+    const prevStats = loadFromStorage("@@@PREFACE_WORDLE_STATS", initialStats);
+    prevStats.gamesPlayed += 1;
     if (STATE.status === "success") {
-        const newGuessCount = STATS.guesses[STATE.attempt_index + 1] + 1;
-
-        STATS.gamesWon += 1;
-        STATS.winPercentage = Math.round((STATS.gamesWon / STATS.gamesPlayed) * 100);
-        STATS.guesses = { ...STATS.guesses, [STATE.attempt_index + 1]: newGuessCount };
-        STATS.currentStreak += 1;
-        STATS.maxStreak = Math.max(STATS.maxStreak, STATS.currentStreak);
-        STATS.averageGuesses =
-            Object.keys(STATS.guesses).reduce((acc, cur) => {
+        const newGuessCount = prevStats.guesses[STATE.attempt_index + 1] + 1;
+        prevStats.gamesWon += 1;
+        prevStats.winPercentage = Math.round((prevStats.gamesWon / prevStats.gamesPlayed) * 100);
+        prevStats.guesses = { ...prevStats.guesses, [STATE.attempt_index + 1]: newGuessCount };
+        prevStats.currentStreak += 1;
+        prevStats.maxStreak = Math.max(prevStats.maxStreak, prevStats.currentStreak);
+        prevStats.averageGuesses =
+            Object.keys(prevStats.guesses).reduce((acc, cur) => {
                 if (cur === "fail") return acc;
-                acc += STATS.guesses[cur];
+                acc += prevStats.guesses[cur];
                 return acc;
             }, 0) / LENGTH;
     } else if (STATE.status === "fail") {
-        STATS.guesses = { ...STATS.guesses, fail: ++STATS.guesses.fail };
-        STATS.currentStreak = 0;
-        STATS.winPercentage = Math.round((STATS.gamesWon / STATS.gamesPlayed) * 100);
+        prevStats.guesses = { ...prevStats.guesses, fail: ++prevStats.guesses.fail };
+        prevStats.currentStreak = 0;
+        prevStats.winPercentage = Math.round((prevStats.gamesWon / prevStats.gamesPlayed) * 100);
     }
-
-    if (STATE.status !== "in-progress") {
-        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}_STATS`, JSON.stringify(STATS));
-        updateStatModal();
-    }
+    saveToStorage("@@@PREFACE_WORDLE_STATS", prevStats);
+    updateStatModal(prevStats);
 }
 
-export function loadFromStorage(): { prevState: State; prevStats: Statistic } {
-    const prevState = localStorage.getItem(`${STORAGE_KEY}_${VARIANT_NAME}`);
-    const prevStats = localStorage.getItem(`${STORAGE_KEY}_${VARIANT_NAME}_STATS`);
-    if (!prevState || !prevStats) {
-        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}`, JSON.stringify(initialState));
-        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}_STATS`, JSON.stringify(initialStats));
-        return { prevState: initialState, prevStats: initialStats };
-    }
-    return { prevState: JSON.parse(prevState), prevStats: JSON.parse(prevStats) };
-}
-
-function nextGame(state: State): boolean {
-    if (state.status !== "in-progress") {
-        ANSWER_INDEX = Math.floor(Math.random() * playable.length);
-        ANSWER = playable[ANSWER_INDEX];
-        return true;
-    }
-    return false;
-}
-
-function syncState(length: number, maxLength: number) {
-    attemptsToGrid(length, maxLength);
-    updateKeyboard();
-}
-
-function startGame(length: number, maxLength: number) {
-    const { prevState, prevStats } = loadFromStorage();
-    STATE = prevState || initialState;
-    STATS = prevStats || initialStats;
-    if (nextGame(prevState)) {
-        localStorage.setItem(`${STORAGE_KEY}_${VARIANT_NAME}`, JSON.stringify(initialState));
-        STATE = initialState;
-    }
-    buildGrid(length, maxLength);
-    buildKeyboard();
-    bindKeyboard();
-    if (prevState) {
-        syncState(length, maxLength);
-    }
-}
-
-startGame(LENGTH, MAX_ATTEMPTS);
+startGame();

@@ -1,5 +1,6 @@
+import { initialState, initialStats } from "./constants";
 import { loadFromStorage } from "./main";
-import { Statistic } from "./types";
+import type { Statistic } from "./types";
 
 const summaryTemplate = ({ gamesPlayed, winPercentage, currentStreak, maxStreak }: Statistic) => {
     return `<div id="statistics">
@@ -85,18 +86,17 @@ const footerTemplate = () => {
     </div>`;
 };
 
-function createSummary() {
-    const { prevStats } = loadFromStorage();
-    console.log("prevStats", prevStats);
-    const summary = summaryTemplate(prevStats);
-    const graphData = createGraphData(prevStats.guesses);
+function createSummary(stats: Statistic) {
+    console.log("stats", stats);
+    const summary = summaryTemplate(stats);
+    const graphData = createGraphData(stats.guesses);
     const distribution = distributionTemplate(graphData);
     const footer = footerTemplate();
     return summary + distribution + footer;
 }
 
 function createShareableSummary() {
-    const data = loadFromStorage();
+    const data = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState);
     if (!data?.prevState) {
         alert("No data");
         return;
@@ -146,12 +146,13 @@ function copyText(text: string) {
     }
 }
 
-export function updateStatModal() {
-    document.querySelector("#stat-modal-body")!.innerHTML = createSummary();
+export function updateStatModal(stats: Statistic) {
+    document.querySelector("#stat-modal-body")!.innerHTML = createSummary(stats);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    updateStatModal();
+    const prevStats = loadFromStorage("@@@PREFACE_WORDLE_STATS", initialStats);
+    updateStatModal(prevStats);
     const share: HTMLButtonElement = document.querySelector("#share-button")!;
     share.onclick = createShareableSummary;
     const today = new Date();
