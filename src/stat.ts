@@ -97,12 +97,12 @@ function createSummary(stats: Statistic) {
 
 function createShareableSummary() {
     const data = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState);
-    if (!data?.prevState) {
+    if (!data) {
         alert("No data");
         return;
     }
     let shareText = "";
-    for (const row of data.prevState.evaluation) {
+    for (const row of data.evaluation) {
         let rowString = ``;
         for (const status of row) {
             switch (status) {
