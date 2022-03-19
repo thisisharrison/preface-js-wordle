@@ -342,6 +342,8 @@ export function loadFromStorage(key: string, initialItem: State | Statistic, sho
         return parsedItem;
     } else if (shouldRender(parsedItem)) {
         return parsedItem;
+    } else {
+        return initialItem;
     }
 }
 
