@@ -324,7 +324,7 @@ function isGameValid(state: State) {
     return isToday(timestamp);
 }
 
-function isToday(timestamp: Date) {
+export function isToday(timestamp: Date) {
     const today = new Date();
     const check = new Date(timestamp);
     return today.toDateString() === check.toDateString();
@@ -348,7 +348,7 @@ export function loadFromStorage(key: string, initialItem: State | Statistic, sho
 }
 
 /** Save game */
-function saveToStorage(key: string, item: any) {
+export function saveToStorage(key: string, item: any) {
     localStorage.setItem(key, JSON.stringify(item));
 }
 
@@ -361,7 +361,7 @@ function updateStats() {
         prevStats.winPercentage = Math.round((prevStats.gamesWon / prevStats.gamesPlayed) * 100);
         prevStats.guesses = { ...prevStats.guesses, [STATE.attempt_index + 1]: newGuessCount };
         prevStats.currentStreak += 1;
-        prevStats.maxStreak = Math.max(prevStats.maxStreak, prevStats.currentStreak);
+        prevStats.maxStreak += 1;
         prevStats.averageGuesses =
             Object.keys(prevStats.guesses).reduce((acc, cur) => {
                 if (cur === "fail") return acc;
@@ -372,6 +372,7 @@ function updateStats() {
         prevStats.guesses = { ...prevStats.guesses, fail: ++prevStats.guesses.fail };
         prevStats.currentStreak = 0;
         prevStats.winPercentage = Math.round((prevStats.gamesWon / prevStats.gamesPlayed) * 100);
+        prevStats.maxStreak = 0;
     }
     saveToStorage("@@@PREFACE_WORDLE_STATS", prevStats);
     updateStatModal(prevStats);
