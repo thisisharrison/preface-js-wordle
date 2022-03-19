@@ -13,7 +13,6 @@ const TOTAL = LENGTH * MAX_ATTEMPTS;
 
 const TILES = Array.from({ length: TOTAL }).map((_) => "");
 const [TILES_NODES, TILES_ROWS] = buildArtifacts(TILES, LENGTH);
-console.log("TILE_NODES", TILES_NODES);
 
 const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
 const KEYBOARD: HTMLDivElement = document.querySelector("#keyboard");
@@ -275,13 +274,11 @@ class Keyboard {
     startInteraction() {
         KEYBOARD.addEventListener("click", (e) => this.handleClickEvent(e));
         document.addEventListener("keydown", (e) => this.handlePressEvent(e));
-        console.log("Interaction started");
     }
 
     stopInteraction() {
         KEYBOARD.removeEventListener("click", this.handleClickEvent);
         document.removeEventListener("keydown", this.handlePressEvent);
-        console.log("Interaction stopped");
     }
 
     pressKey(key: string) {

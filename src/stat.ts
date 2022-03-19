@@ -1,5 +1,5 @@
 import { initialState, initialStats } from "./constants";
-import { loadFromStorage } from "./main";
+import { isToday, loadFromStorage, saveToStorage } from "./main";
 import type { Statistic } from "./types";
 
 function createSummary(stats: Statistic) {
@@ -106,7 +106,6 @@ const footerTemplate = () => {
 
 function createShareableSummary() {
     const data = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState);
-    console.log("here");
     if (!data) {
         alert("No data");
         return;
@@ -156,8 +155,22 @@ function copyText(text: string) {
     }
 }
 
+function isYesterday(timestamp: Date) {
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const check = new Date(timestamp);
+    return yesterday.toDateString() === check.toDateString();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const prevStats = loadFromStorage("@@@PREFACE_WORDLE_STATS", initialStats);
+    const prevGame = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState);
+    const x = !(isYesterday(prevGame.timestamp) || isToday(prevGame.timestamp));
+    if (!(isYesterday(prevGame.timestamp) || isToday(prevGame.timestamp))) {
+        prevStats.maxStreak = 0;
+        saveToStorage("@@@PREFACE_WORDLE_STATS", prevStats);
+    }
     updateStatModal(prevStats);
     const today = new Date();
     const tomorrow = new Date(today);
