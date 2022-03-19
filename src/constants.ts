@@ -45,9 +45,6 @@ const initialStats: Statistic = {
 };
 
 const STUDENTS = {
-    Ellen: "/students/index.html",
-    Mark: "/students/index.html",
-    Kevin: "/students/index.html",
     NBA: "/students/nba_wordle/index.html",
 };
 

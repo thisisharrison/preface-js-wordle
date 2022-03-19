@@ -6,7 +6,7 @@ module.exports = defineConfig({
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html'),
-                students: resolve(__dirname, 'students/index.html')
+                nba_wordle: resolve(__dirname, 'students/nba_wordle/index.html'),
             }
         }
     },

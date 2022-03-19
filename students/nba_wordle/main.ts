@@ -13,6 +13,7 @@ const TOTAL = LENGTH * MAX_ATTEMPTS;
 
 const TILES = Array.from({ length: TOTAL }).map((_) => "");
 const [TILES_NODES, TILES_ROWS] = buildArtifacts(TILES, LENGTH);
+console.log("TILE_NODES", TILES_NODES);
 
 const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
 const KEYBOARD: HTMLDivElement = document.querySelector("#keyboard");
