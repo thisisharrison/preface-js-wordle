@@ -1,6 +1,6 @@
 import { WORD_LENGTH, MAX_ATTEMPTS, ANSWER, CONGRATULATIONS, RATING, WORD_LIST, initialState, initialStats } from "./constants";
 import { updateStatModal } from "./stat";
-import type { Evaluation, State } from "./types";
+import type { Evaluation, State, Statistic } from "./types";
 import "./style.css";
 
 const TOTAL_TILES = WORD_LENGTH * MAX_ATTEMPTS;
@@ -13,14 +13,13 @@ const KEYBOARD_NODES: HTMLButtonElement[] = [];
 
 let STATE = initialState;
 
-window.state = STATE;
-
 /** Game start logic */
 function startGame() {
     buildArtifacts();
     const prevGame = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState, isGameValid);
     reloadGame(prevGame);
     STATE = prevGame;
+    window.state = STATE;
     startInteraction();
 }
 
@@ -82,9 +81,11 @@ function buildKeyboard() {
             if (key === "↵") {
                 button.innerText = "enter";
                 button.setAttribute("data-key", "Enter");
+                button.classList.add("one-and-a-half");
             } else if (key === "←") {
                 button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path fill="var(--color-tone-1)" d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H7.07L2.4 12l4.66-7H22v14zm-11.59-2L14 13.41 17.59 17 19 15.59 15.41 12 19 8.41 17.59 7 14 10.59 10.41 7 9 8.41 12.59 12 9 15.59z"></path></svg>`;
                 button.setAttribute("data-key", "Backspace");
+                button.classList.add("one-and-a-half");
             } else {
                 button.innerText = key;
                 button.setAttribute("data-key", key);
@@ -127,14 +128,12 @@ function hideToast(toast: HTMLDivElement) {
 function startInteraction() {
     KEYBOARD.addEventListener("click", handleClickEvent);
     document.addEventListener("keydown", handlePressEvent);
-    console.log("Interaction started");
 }
 
 /** Unbind events during animation */
 function stopInteraction() {
     KEYBOARD.removeEventListener("click", handleClickEvent);
     document.removeEventListener("keydown", handlePressEvent);
-    console.log("Interaction stopped");
 }
 
 /** Button click events */
@@ -221,6 +220,7 @@ function submitAttempt(attempt: string) {
     const { attempt_index } = STATE;
     if (!WORD_LIST.includes(attempt)) {
         shake(attempt, attempt_index);
+        return;
     }
     const wordEvaluation = evaluateWord(attempt);
     STATE.evaluation.push(wordEvaluation);
@@ -251,18 +251,18 @@ function paintGame(attempt_index: number, evaluation: Evaluation[]) {
 }
 
 function paint(index: number, evaluation: Evaluation[]) {
-    const tile_index = index * WORD_LENGTH;
-    const length = tile_index + WORD_LENGTH;
+    const tileIndex = index * WORD_LENGTH;
+    const length = tileIndex + WORD_LENGTH;
 
-    for (let i = tile_index; i < length; i++) {
+    for (let i = tileIndex; i < length; i++) {
         const charIndex = i % WORD_LENGTH;
-        const result = evaluation[charIndex];
+        const status = evaluation[charIndex];
         const key = TILES_NODES[i].textContent!;
         TILES_NODES[i].dataset["animation"] = "flip";
         TILES_NODES[i].style.animationDelay = `${charIndex * 400}ms`;
         TILES_NODES[i].onanimationstart = () => {
-            setTimeout(() => (TILES_NODES[i].dataset["status"] = result), 250);
-            setTimeout(() => paintKey(key, result), 250);
+            setTimeout(() => (TILES_NODES[i].dataset["status"] = status), 250);
+            setTimeout(() => paintKey(key, status), 250);
         };
         if (i === length - 1 && STATE.status === "success") {
             TILES_NODES[i].onanimationend = bounce;
@@ -276,13 +276,12 @@ function paint(index: number, evaluation: Evaluation[]) {
 }
 
 function paintKey(key: string, status: Evaluation) {
-    const index = KEYBOARD_NODES.findIndex((button) => {
+    const node = KEYBOARD_NODES.find((button) => {
         const char = button.innerHTML;
         return char === key;
-    });
-    const node = KEYBOARD_NODES[index];
-    const nodeStatus = node.dataset["status"] as Evaluation | undefined;
-    if (nodeStatus && RATING[nodeStatus] > RATING[status]) {
+    })!;
+    const prevStatus = node.dataset["status"] as Evaluation | undefined;
+    if (prevStatus && RATING[prevStatus] > RATING[status]) {
         return;
     } else {
         node.dataset["status"] = status;
@@ -332,7 +331,7 @@ function isToday(timestamp: Date) {
 }
 
 /** Load previous game conditionally */
-export function loadFromStorage(key: string, initialItem: any, shouldRender?: (state: State) => boolean) {
+export function loadFromStorage(key: string, initialItem: State | Statistic, shouldRender?: (state: State) => boolean) {
     const item = localStorage.getItem(key);
     if (!item) {
         saveToStorage(key, initialItem);
@@ -346,7 +345,7 @@ export function loadFromStorage(key: string, initialItem: any, shouldRender?: (s
     }
 }
 
-/** Load new game */
+/** Save game */
 function saveToStorage(key: string, item: any) {
     localStorage.setItem(key, JSON.stringify(item));
 }

@@ -374,6 +374,14 @@ nav {
       text-transform: uppercase;
       -webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
 
+      svg {
+        pointer-events: none;
+      }
+
+      &.one-and-a-half {
+        flex: 1.5;
+      }
+
       &[data-status="correct"] {
         background-color: var(--color-correct);
         color: var(--white);
