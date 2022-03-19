@@ -166,8 +166,8 @@ function isYesterday(timestamp: Date) {
 document.addEventListener("DOMContentLoaded", () => {
     const prevStats = loadFromStorage("@@@PREFACE_WORDLE_STATS", initialStats);
     const prevGame = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState);
-    const x = !(isYesterday(prevGame.timestamp) || isToday(prevGame.timestamp));
-    if (!(isYesterday(prevGame.timestamp) || isToday(prevGame.timestamp))) {
+    const neitherTodayNorYesterday = !(isYesterday(prevGame.timestamp) || isToday(prevGame.timestamp));
+    if (neitherTodayNorYesterday) {
         prevStats.maxStreak = 0;
         saveToStorage("@@@PREFACE_WORDLE_STATS", prevStats);
     }
