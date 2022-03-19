@@ -2,6 +2,24 @@ import { initialState, initialStats } from "./constants";
 import { loadFromStorage } from "./main";
 import type { Statistic } from "./types";
 
+function createSummary(stats: Statistic) {
+    const summary = summaryTemplate(stats);
+    const graphData = createGraphData(stats.guesses);
+    const distribution = distributionTemplate(graphData);
+    const footer = footerTemplate();
+    return summary + distribution + footer;
+}
+
+export function updateStatModal(stats: Statistic) {
+    document.querySelector("#stat-modal-body")!.innerHTML = createSummary(stats);
+    bindShareButton();
+}
+
+function bindShareButton() {
+    const share = document.getElementById("share-button")! as HTMLButtonElement;
+    share.addEventListener("click", createShareableSummary);
+}
+
 const summaryTemplate = ({ gamesPlayed, winPercentage, currentStreak, maxStreak }: Statistic) => {
     return `<div id="statistics">
         <div class="statistic-container">
@@ -27,7 +45,7 @@ const summaryTemplate = ({ gamesPlayed, winPercentage, currentStreak, maxStreak 
 };
 
 const createDistribution = (guess: number, numGuess: number, max: number) => `
-<div class="graph-container">
+<div class="graph-container" id="graph-container">
     <div class="guess">${guess}</div>
     <div class="graph">
         <div class="graph-bar align-right ${numGuess > 0 ? "highlight" : ""}" style="width: ${numGuess === 0 ? 7 : (numGuess / max) * 100}%">
@@ -48,7 +66,7 @@ const createGraphData = (stat: Record<string, number>) => {
 };
 
 const distributionTemplate = (graphData: string) => `
-<div>
+<div id="distribution">
 <h1>Guess Distribution</h1>
 </div>
 <div id="guess-distribution">
@@ -86,17 +104,9 @@ const footerTemplate = () => {
     </div>`;
 };
 
-function createSummary(stats: Statistic) {
-    console.log("stats", stats);
-    const summary = summaryTemplate(stats);
-    const graphData = createGraphData(stats.guesses);
-    const distribution = distributionTemplate(graphData);
-    const footer = footerTemplate();
-    return summary + distribution + footer;
-}
-
 function createShareableSummary() {
     const data = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState);
+    console.log("here");
     if (!data) {
         alert("No data");
         return;
@@ -146,15 +156,9 @@ function copyText(text: string) {
     }
 }
 
-export function updateStatModal(stats: Statistic) {
-    document.querySelector("#stat-modal-body")!.innerHTML = createSummary(stats);
-}
-
 document.addEventListener("DOMContentLoaded", () => {
     const prevStats = loadFromStorage("@@@PREFACE_WORDLE_STATS", initialStats);
     updateStatModal(prevStats);
-    const share: HTMLButtonElement = document.querySelector("#share-button")!;
-    share.onclick = createShareableSummary;
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);

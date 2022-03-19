@@ -19,7 +19,6 @@ window.state = STATE;
 function startGame() {
     buildArtifacts();
     const prevGame = loadFromStorage("@@@PREFACE_WORDLE_GAME", initialState, isGameValid);
-    console.log(prevGame);
     reloadGame(prevGame);
     STATE = prevGame;
     startInteraction();
@@ -28,7 +27,6 @@ function startGame() {
 /** Load previous game from storage */
 function reloadGame(prevGame: State) {
     const { attempts, evaluation } = prevGame;
-    console.log("here");
     const prevTiles = attempts.flatMap((word) => [...word.split("")]);
     for (let i = 0; i < prevTiles.length; i++) {
         const char = prevTiles[i];
@@ -131,14 +129,12 @@ function hideToast(toast: HTMLDivElement) {
 function startInteraction() {
     KEYBOARD.addEventListener("click", handleClickEvent);
     document.addEventListener("keydown", handlePressEvent);
-    console.log("Interaction started");
 }
 
 /** Unbind events during animation */
 function stopInteraction() {
     KEYBOARD.removeEventListener("click", handleClickEvent);
     document.removeEventListener("keydown", handlePressEvent);
-    console.log("Interaction stopped");
 }
 
 /** Button click events */
