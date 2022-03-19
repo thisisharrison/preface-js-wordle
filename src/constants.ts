@@ -1,7 +1,7 @@
 import { valid, playable } from "./fixtures/words.json";
 import type { Evaluation, State, Statistic } from "./types";
 
-const LENGTH = 5;
+const WORD_LENGTH = 5;
 const MAX_ATTEMPTS = 6;
 const WORD_LIST = [...valid, ...playable];
 const offsetFromDate = new Date(2022, 0, 1).getTime();
@@ -9,6 +9,14 @@ const msOffset = Date.now() - offsetFromDate;
 const dayOffset = msOffset / 1000 / 60 / 60 / 24;
 const ANSWER_INDEX = Math.floor(dayOffset);
 const ANSWER: string = playable[ANSWER_INDEX];
+
+declare global {
+    interface Window {
+        answer: string;
+        state: State;
+    }
+}
+window.answer = ANSWER;
 
 const RATING: Record<Evaluation, number> = {
     absent: 0,
@@ -40,6 +48,7 @@ const STUDENTS = {
     Ellen: "/students/index.html",
     Mark: "/students/index.html",
     Kevin: "/students/index.html",
+    NBA: "/students/nba_wordle/index.html",
 };
 
-export { LENGTH, MAX_ATTEMPTS, ANSWER, CONGRATULATIONS, RATING, WORD_LIST, playable, initialState, initialStats, STUDENTS };
+export { WORD_LENGTH, MAX_ATTEMPTS, ANSWER, CONGRATULATIONS, RATING, WORD_LIST, playable, initialState, initialStats, STUDENTS };

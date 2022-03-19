@@ -1,21 +1,19 @@
-import { LENGTH, MAX_ATTEMPTS, ANSWER, CONGRATULATIONS, RATING, WORD_LIST, initialState, initialStats } from "./constants";
+import { WORD_LENGTH, MAX_ATTEMPTS, ANSWER, CONGRATULATIONS, RATING, WORD_LIST, initialState, initialStats } from "./constants";
 import { updateStatModal } from "./stat";
 import type { Evaluation, State } from "./types";
 import "./style.css";
 
-const TOTAL_TILES = LENGTH * MAX_ATTEMPTS;
-const TILES = Array.from({ length: LENGTH * MAX_ATTEMPTS }).map((_) => "");
+const TOTAL_TILES = WORD_LENGTH * MAX_ATTEMPTS;
+const TILES = Array.from({ length: WORD_LENGTH * MAX_ATTEMPTS }).map((_) => "");
 const TILES_NODES: HTMLDivElement[] = [];
 const TILES_ROWS: HTMLDivElement[] = [];
 const KEYS = ["qwertyuiop", "asdfghjkl", "↵zxcvbnm←"];
 const KEYBOARD: HTMLDivElement = document.createElement("div");
 const KEYBOARD_NODES: HTMLButtonElement[] = [];
-const KEYBOARD_MAP: Map<string, Evaluation | ""> = KEYS.flatMap((row) => [...row.split("")]).reduce((acc, cur) => {
-    if ("↵←".includes(cur)) return acc;
-    return acc.set(cur, "");
-}, new Map());
 
 let STATE = initialState;
+
+window.state = STATE;
 
 /** Game start logic */
 function startGame() {
@@ -54,7 +52,7 @@ function buildBoard() {
     let row = document.createElement("div");
     row.className = "row";
     TILES.forEach((_, i) => {
-        if (i % LENGTH === 0 && i !== 0) {
+        if (i % WORD_LENGTH === 0 && i !== 0) {
             wrapper.appendChild(row);
             TILES_ROWS.push(row);
             row = document.createElement("div");
@@ -83,12 +81,14 @@ function buildKeyboard() {
             const button = document.createElement("button");
             if (key === "↵") {
                 button.innerText = "enter";
+                button.setAttribute("data-key", "Enter");
             } else if (key === "←") {
                 button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path fill="var(--color-tone-1)" d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H7.07L2.4 12l4.66-7H22v14zm-11.59-2L14 13.41 17.59 17 19 15.59 15.41 12 19 8.41 17.59 7 14 10.59 10.41 7 9 8.41 12.59 12 9 15.59z"></path></svg>`;
+                button.setAttribute("data-key", "Backspace");
             } else {
                 button.innerText = key;
+                button.setAttribute("data-key", key);
             }
-            button.setAttribute("data-key", key);
             return button;
         });
         const row = document.createElement("div");
@@ -147,13 +147,7 @@ function handleClickEvent(event: MouseEvent) {
     if (!key) {
         return;
     }
-    if (key === "←") {
-        key = "Backspace";
-    }
-    if (key === "↵") {
-        key = "Enter";
-    }
-    evaluateKey(key);
+    pressKey(key);
 }
 
 /** Keyboard press events */
@@ -162,11 +156,11 @@ function handlePressEvent(event: KeyboardEvent) {
         return;
     }
     const key = event.key;
-    evaluateKey(key);
+    pressKey(key);
 }
 
 /** Update TILES and TILES_NODES */
-function evaluateKey(key: string) {
+function pressKey(key: string) {
     const { attempts, attempt_index, status } = STATE;
 
     if (status === "success" || status === "fail") return;
@@ -181,29 +175,29 @@ function evaluateKey(key: string) {
     const regex = new RegExp("^[a-zA-Z]$");
 
     if (regex.test(key)) {
-        if (current_length === LENGTH) return;
-        TILES_NODES[next].textContent = key;
-        TILES_NODES[next].dataset["status"] = "tbd";
-        TILES_NODES[next].dataset["animation"] = "pop";
+        if (current_length === WORD_LENGTH) return;
+        const nextTile = TILES_NODES[next];
+        nextTile.textContent = key;
+        nextTile.dataset["status"] = "tbd";
+        nextTile.dataset["animation"] = "pop";
         TILES[next] = key;
         attempts[attempt_index] += key;
         return;
     }
 
-    if (key === "Backspace") {
+    if (key === "Backspace" || key === "Delete") {
         if (current_attempt === "") return;
-        TILES_NODES[next - 1].textContent = "";
-        TILES_NODES[next - 1].dataset["status"] = "empty";
+        const lastTile = TILES_NODES[next - 1];
+        lastTile.textContent = "";
+        lastTile.dataset["status"] = "empty";
         TILES[next - 1] = "";
         attempts[attempt_index] = current_attempt.slice(0, current_length - 1);
         return;
     }
 
     if (key === "Enter") {
-        // to debug
-        console.log(STATE);
-        if (current_attempt.length < LENGTH) return;
-        evaluateAttempt(current_attempt);
+        if (current_attempt.length < WORD_LENGTH) return;
+        submitAttempt(current_attempt);
         return;
     }
 }
@@ -223,102 +217,103 @@ function evaluateWord(string: string) {
 }
 
 /** Paint and animate the guess */
-function evaluateAttempt(attempt: string) {
+function submitAttempt(attempt: string) {
     const { attempt_index } = STATE;
-    try {
-        if (!WORD_LIST.includes(attempt)) {
-            throw new Error(`${attempt.toUpperCase()} not in word list`);
-        }
-        const results = evaluateWord(attempt);
-        STATE.evaluation.push(results);
-        paintGame(attempt_index, results);
+    if (!WORD_LIST.includes(attempt)) {
+        shake(attempt, attempt_index);
+    }
+    const wordEvaluation = evaluateWord(attempt);
+    STATE.evaluation.push(wordEvaluation);
 
-        if (ANSWER === attempt) {
-            STATE.status = "success";
+    if (ANSWER === attempt) {
+        STATE.status = "success";
+    } else if (attempt_index === MAX_ATTEMPTS - 1) {
+        STATE.status = "fail";
+    } else {
+        STATE.attempt_index += 1;
+    }
 
-            setTimeout(() => {
-                bounce();
-                createToast(`${CONGRATULATIONS[attempt_index]}!`, "success");
-            }, (LENGTH + 1) * 400);
-        } else if (attempt_index === MAX_ATTEMPTS - 1) {
-            STATE.status = "fail";
-            createToast(`The word was ${ANSWER.toUpperCase()}`, "fail");
-        } else {
-            STATE.attempt_index += 1;
-        }
+    paintGame(attempt_index, wordEvaluation);
 
-        saveToStorage("@@@PREFACE_WORDLE_GAME", STATE);
+    saveToStorage("@@@PREFACE_WORDLE_GAME", STATE);
 
-        if (STATE.status !== "in-progress") {
-            updateStats();
-        }
-    } catch (error) {
-        // @ts-ignore
-        createToast(`${error.message}`, "fail");
-        TILES_ROWS[attempt_index].dataset["status"] = "invalid";
-        TILES_ROWS[attempt_index].onanimationend = (event) => {
-            if (event.animationName === "Shake") {
-                TILES_ROWS[attempt_index].removeAttribute("data-status");
-            }
-        };
+    if (STATE.status !== "in-progress") {
+        updateStats();
     }
 }
 
-function paintGame(attempt_index: number, results: Evaluation[]) {
+function paintGame(attempt_index: number, evaluation: Evaluation[]) {
     stopInteraction();
-    paint(attempt_index, results);
+    paint(attempt_index, evaluation);
     setTimeout(() => {
         startInteraction();
-    }, 500 * LENGTH);
+    }, 500 * WORD_LENGTH);
 }
 
 function paint(index: number, evaluation: Evaluation[]) {
-    const tile_index = index * LENGTH;
+    const tile_index = index * WORD_LENGTH;
+    const length = tile_index + WORD_LENGTH;
 
-    for (let i = tile_index; i < tile_index + LENGTH; i++) {
-        const charIndex = i % LENGTH;
+    for (let i = tile_index; i < length; i++) {
+        const charIndex = i % WORD_LENGTH;
         const result = evaluation[charIndex];
-        const key = TILES_NODES[i].textContent;
+        const key = TILES_NODES[i].textContent!;
         TILES_NODES[i].dataset["animation"] = "flip";
         TILES_NODES[i].style.animationDelay = `${charIndex * 400}ms`;
         TILES_NODES[i].onanimationstart = () => {
             setTimeout(() => (TILES_NODES[i].dataset["status"] = result), 250);
-            setTimeout(() => paintKeyboard(key, result), 250);
+            setTimeout(() => paintKey(key, result), 250);
         };
-    }
-}
-
-function bounce() {
-    const { attempt_index } = STATE;
-    const start = attempt_index * LENGTH;
-    for (let i = start; i < start + LENGTH; i++) {
-        TILES_NODES[i].dataset["animation"] = "win";
-        TILES_NODES[i].style.animationDelay = `${(i % LENGTH) * 100}ms`;
-    }
-}
-
-function paintKeyboard(key: string | null, newState: Evaluation) {
-    if (!key) return;
-    const prevState = KEYBOARD_MAP.get(key);
-    if (prevState == undefined) {
-        return;
-    }
-    if (prevState === "") {
-        KEYBOARD_MAP.set(key, newState);
-    } else {
-        const prevRating = RATING[prevState];
-        const newRating = RATING[newState];
-        if (newRating < prevRating) {
-            return;
-        } else if (newRating > prevRating) {
-            KEYBOARD_MAP.set(key, newState);
+        if (i === length - 1 && STATE.status === "success") {
+            TILES_NODES[i].onanimationend = bounce;
+        }
+        if (i === length - 1 && STATE.status === "fail") {
+            TILES_NODES[i].onanimationend = () => {
+                createToast(`The word was ${ANSWER.toUpperCase()}`, "fail");
+            };
         }
     }
+}
+
+function paintKey(key: string, status: Evaluation) {
     const index = KEYBOARD_NODES.findIndex((button) => {
         const char = button.innerHTML;
         return char === key;
     });
-    KEYBOARD_NODES[index].dataset["status"] = KEYBOARD_MAP.get(key);
+    const node = KEYBOARD_NODES[index];
+    const nodeStatus = node.dataset["status"] as Evaluation | undefined;
+    if (nodeStatus && RATING[nodeStatus] > RATING[status]) {
+        return;
+    } else {
+        node.dataset["status"] = status;
+    }
+}
+
+function shake(attempt: string, attempt_index: number) {
+    createToast(`${attempt.toUpperCase()} not in word list`, "fail");
+    TILES_ROWS[attempt_index].dataset["status"] = "invalid";
+    TILES_ROWS[attempt_index].onanimationend = (event) => {
+        if (event.animationName === "Shake") {
+            TILES_ROWS[attempt_index].removeAttribute("data-status");
+        }
+    };
+}
+
+function bounce() {
+    const { attempt_index } = STATE;
+    const start = attempt_index * WORD_LENGTH;
+    const length = start + WORD_LENGTH;
+
+    for (let i = start; i < length; i++) {
+        TILES_NODES[i].dataset["animation"] = "win";
+        TILES_NODES[i].style.animationDelay = `${(i % WORD_LENGTH) * 100}ms`;
+
+        if (i === length - 1) {
+            TILES_NODES[i].onanimationend = () => {
+                createToast(`${CONGRATULATIONS[attempt_index]}!`, "success");
+            };
+        }
+    }
 }
 
 /**
@@ -371,7 +366,7 @@ function updateStats() {
                 if (cur === "fail") return acc;
                 acc += prevStats.guesses[cur];
                 return acc;
-            }, 0) / LENGTH;
+            }, 0) / WORD_LENGTH;
     } else if (STATE.status === "fail") {
         prevStats.guesses = { ...prevStats.guesses, fail: ++prevStats.guesses.fail };
         prevStats.currentStreak = 0;

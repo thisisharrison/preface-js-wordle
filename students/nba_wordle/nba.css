@@ -1,0 +1,20 @@
+body {
+  background-position: center;
+  background-image: url("https://wallpaperaccess.com/full/1126419.jpg");
+}
+
+#board-container {
+  #board {
+    grid-template-rows: repeat(4, 1fr);
+    min-width: 420px;
+
+    .row {
+      display: flex;
+      flex-direction: row;
+
+      .tile {
+        flex: 1;
+      }
+    }
+  }
+}
